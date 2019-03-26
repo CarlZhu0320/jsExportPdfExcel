@@ -1,0 +1,244 @@
+<meta charset="UTF-8">
+<!-- import CSS -->
+<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+</head>
+
+<body>
+    <div id="app">
+        <div class="export">
+            <el-button @click="exportPdf" style="margin-top: 2px;" size="medium" type="success">导出PDF</el-button>
+            <el-button @click="exportExcel" style="margin-top: 2px;" size="medium" type="success">导出EXCEL</el-button>
+        </div>
+        <div id="pdfTableData">
+            <template>
+                <el-table id="rebateSetTable" :data="tableData" stripe style="width: 100%">
+                    <el-table-column :label="date" align="center">
+                        <el-table-column prop="sumTitel" label="线路总计" align="center">
+                        </el-table-column>
+                    </el-table-column>
+                    <el-table-column :label="polls" align="center">
+                        <el-table-column label="北行" align="center">
+                            <el-table-column prop="busPollsB" label="售票数" align="center"></el-table-column>
+                            <el-table-column prop="pollsMoneyB" label="售票额" align="center"></el-table-column>
+                        </el-table-column>
+                    </el-table-column>
+                    <el-table-column :label="money" align="center">
+                        <el-table-column label="南行" align="center">
+                            <el-table-column prop="busPollsN" label="售票数" align="center"></el-table-column>
+                            <el-table-column prop="pollsMoneyN" label="售票额" align="center"></el-table-column>
+                        </el-table-column>
+                    </el-table-column>
+                </el-table>
+                <table>
+                    <!--在产生Excel文件时，表格与表格之间空三行-->
+                    <tr></tr>
+                    <tr></tr>
+                    <tr></tr>
+                </table>
+                <el-table id="rebateSetTable2" :data="tableData2" stripe style="width: 100%">
+                    <el-table-column :label="titel">
+                        <el-table-column prop="name" label="线路名称" align="center">
+                        </el-table-column>
+                        <el-table-column label="北行" align="center">
+                            <el-table-column prop="busPollsB" label="售票数" align="center"></el-table-column>
+                            <el-table-column prop="pollsMoneyB" label="售票额" align="center"></el-table-column>
+                        </el-table-column>
+                        <el-table-column label="南行" align="center">
+                            <el-table-column prop="busPollsN" label="售票数" align="center"></el-table-column>
+                            <el-table-column prop="pollsMoneyN" label="售票额" align="center"></el-table-column>
+                        </el-table-column>
+                    </el-table-column>
+                </el-table>
+            </template>
+        </div>
+    </div>
+
+</body>
+<script src="https://unpkg.com/vue/dist/vue.js"></script>
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script src="../js/FileSaver.min.js"></script>
+<script lang="javascript" src="../js/xlsx.full.min2.js"></script>
+<script type="text/javascript" src="../js/html2canvas.js"></script>
+<script type="text/javascript" src="../js/jsPdf.debug.js"></script>
+<script lang="javascript" src="../js/export.js"></script>
+<script lang="javascript" src="../js/xlsx.extendscript.js"></script>
+<script>
+    var Main = {
+        data() {
+            return {
+                tableData: [{
+                    sumTitel: '合计',
+                    busPollsB: '50',
+                    pollsMoneyB: '150',
+                    busPollsN: '60',
+                    pollsMoneyN: '240'
+                }],
+                tableData2: [{
+                    name: '总计',
+                    busPollsB: '50',
+                    pollsMoneyB: '150',
+                    busPollsN: '60',
+                    pollsMoneyN: '240'
+                },
+                {
+                    name: '线路1',
+                    busPollsB: '50',
+                    pollsMoneyB: '150',
+                    busPollsN: '60',
+                    pollsMoneyN: '240'
+                },
+                {
+                    name: '线路2',
+                    busPollsB: '50',
+                    pollsMoneyB: '150',
+                    busPollsN: '60',
+                    pollsMoneyN: '240'
+                }],
+                titel: '深圳湾口岸',
+                date: '20190320',
+                polls: '110',
+                money: '390'
+            }
+        },
+        methods: {
+            exportPdf() {
+                html2canvas(document.querySelector('#pdfTableData'), {
+                    onrendered: function (canvas) {
+
+                        var contentWidth = canvas.width;
+                        var contentHeight = canvas.height;
+
+                        //一页pdf显示html页面生成的canvas高度;
+                        var pageHeight = contentWidth / 592.28 * 841.89;
+                        //未生成pdf的html页面高度
+                        var leftHeight = contentHeight;
+                        //页面偏移
+                        var position = 0;
+                        //a4纸的尺寸[595.28,841.89]，html页面生成的canvas在pdf中图片的宽高
+                        var imgWidth = 595.28;
+                        var imgHeight = 592.28 / contentWidth * contentHeight;
+
+                        var pageData = canvas.toDataURL('image/jpeg', 1.0);
+
+                        var pdf = new jsPDF('', 'pt', 'a4');
+
+                        //有两个高度需要区分，一个是html页面的实际高度，和生成pdf的页面高度(841.89)
+                        //当内容未超过pdf一页显示的范围，无需分页
+                        if (leftHeight < pageHeight) {
+                            pdf.addImage(pageData, 'JPEG', 0, 0, imgWidth, imgHeight);
+                        } else {
+                            while (leftHeight > 0) {
+                                pdf.addImage(pageData, 'JPEG', 0, position, imgWidth, imgHeight)
+                                leftHeight -= pageHeight;
+                                position -= 841.89;
+                                //避免添加空白页
+                                if (leftHeight > 0) {
+                                    pdf.addPage();
+                                }
+                            }
+                        }
+
+                        pdf.save('content.pdf');
+                    }
+                })
+            },
+            exportExcel: function () {
+                var sheet = this.traverseSetStyle("app");
+                openDownloadDialog(sheet2blob(sheet), this.date + '销售日报.xlsx');
+            },
+            traverseSetStyle: function (id) {//通过传入标签id，设置输出Excel的统一样式，返回下载Excel sheet页对象
+                var table1 = document.querySelector("#" + id);
+                var opt = {
+                    rowIndex: 0
+                };
+                let sheet = XLSX2.utils.table_to_sheet(table1, opt);
+                console.log(sheet);
+                for (var i = 0; i < Object.keys(sheet).length - 2; i++) {
+                    if (sheet[Object.keys(sheet)[i]].t === "s") {
+                        sheet[Object.keys(sheet)[i]].s = { //样式
+                            font: {
+                                name: '宋体',
+                                sz: 14,
+                                bold: true,
+                                underline: false,
+                            },
+                            alignment: {
+                                horizontal: "center",
+                                vertical: "center",
+                                wrap_text: true
+                            },
+                            border: {//设置表格边框，合并单元格的边框设置会失效（A1,A2,A3合并成一个A1，设置时，单元格上只有一小格的边框）
+                                top: { style: 'thin' },
+                                left: { style: 'thin' },
+                                bottom: { style: 'thin' },
+                                right: { style: 'thin' }
+                            }
+                        };
+                    }
+                }
+                sheet = this.setRangeStyle(sheet);
+                sheet["!cols"] = [{
+                    wpx: 150
+                }, {
+                    wpx: 120
+                }, {
+                    wpx: 120
+                }, {
+                    wpx: 120
+                }, {
+                    wpx: 120
+                }, {
+                    wpx: 120
+                }, {
+                    wpx: 120
+                }, {
+                    wpx: 120
+                }, {
+                    wpx: 120
+                }]; //单元格列宽
+                return sheet;
+            },
+            setRangeStyle: function (sheet) {
+                var range = [];
+                for (i in sheet["!merges"]) {
+                    if (sheet["!merges"][i].s.c != sheet["!merges"][i].e.c) {
+                        range.push(sheet["!merges"][i]);
+                    }
+                }
+                let arr = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"];
+                for (j in range) {
+                    var startRowNumber = range[j].s.c;
+                    var endRowNumber = range[j].e.c;
+                    for (var i = startRowNumber; i < endRowNumber; i++) {
+                        sheet[arr[i + 1] + (range[j].s.r + 1)] = {
+                            s: {
+                                font: {
+                                    name: '宋体',
+                                    sz: 14,
+                                    bold: true,
+                                    underline: false
+                                },
+                                alignment: {
+                                    horizontal: "center",
+                                    vertical: "center",
+                                    wrap_text: true
+                                },
+                                border: {
+                                    top: { style: 'thin' },
+                                    left: { style: 'thin' },
+                                    bottom: { style: 'thin' },
+                                    right: { style: 'thin' }
+                                }
+                            }
+                        }
+                    }
+                }
+                return sheet;
+            }
+        }
+    }
+    var Ctor = Vue.extend(Main)
+    new Ctor().$mount('#app')
+</script>
+
+</html>
