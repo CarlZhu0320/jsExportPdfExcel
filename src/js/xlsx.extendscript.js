@@ -28105,7 +28105,12 @@ function parse_dom_table(table, _opts) {
 	var range = {s:{r:0,c:0},e:{r:0,c:0}};
 	var merges = [], midx = 0;
 	var rowinfo = [];
-	var _R = 0, R = _opts.rowIndex || 0, _C, C, RS, CS;
+  //var _R = 0, R = _opts.rowIndex || 0, _C, C, RS, CS;
+  var _R = 0, _C, C, RS, CS;
+  var R = 0;
+  if(opts && opts.rowIndex) {
+    R = opts.rowIndex;
+  }
 	for(; _R < rows.length && R < sheetRows; ++_R) {
 		var row = rows[_R];
 		if (is_dom_element_hidden(row)) {

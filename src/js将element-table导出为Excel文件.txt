@@ -1,0 +1,6 @@
+所需js：export.js、xlsx.full.min.js、xlsx.extendscript.js。其中xlsx.full.min.js中需要将XLSX修改为XLSX2或者其他名字，因为引用的其他js中也有XLSX变量。
+
+注意问题：
+1、导出Excel表格时，table中有合并单元格，再设置样式时会失败（只会设置合并单元格的一部分）这个时候需要单独给合并单元格设置样式。
+
+参考网站：https://blog.csdn.net/tian_i/article/details/84327329#commentsedit
