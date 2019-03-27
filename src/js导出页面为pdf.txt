@@ -1,0 +1,66 @@
+所需js文件：jsPdf.debug.js、html2canvas.js
+导出pdf的大致原理：在浏览器端使用html2canvas通过遍历页面指定DOM结构，收集元素信息和相应样式，渲染为canvas image。（canvas是画布标签，这个遍历指定DOM结构可以看成是将指定DOM结构生成一张图片）然后通过jsPdf将图片保存为pdf文件。
+例：
+html2canvas(document.querySelector('#dataDiv'), {
+    onrendered: function(canvas) {
+       	 //返回图片dataURL，参数：图片格式和清晰度(0-1)
+                  var pageData = canvas.toDataURL('image/jpeg', 1.0);
+
+                  //方向默认竖直，尺寸ponits，格式a4[595.28,841.89]
+                  var pdf = new jsPDF('', 'pt', 'a4');
+
+                  //addImage后两个参数控制添加图片的尺寸，此处将页面高度按照a4纸宽高比列进行压缩
+                  pdf.addImage(pageData, 'JPEG', 0, 0, 595.28, 592.28/canvas.width * canvas.height );
+
+                  pdf.save('stone.pdf');
+    }
+});
+
+//document.querySelector('#dataDiv')返回的是指定标签中的所有内容，即id为dataDiv标签中所有元素的HTML代码所组成的对象。
+
+//onrendered: function(canvas)为回调函数，canvas是通过#dataDiv生成的canvas image文件。
+
+//注意：当页面内容高度超过pdf每页的高度后是不会显示的，这个时候需要我们手动添加页，再将页面产生的图片放进去，每一页放的都是同一个图片，需要通过偏移，将显示在每一页上面的内容不同。（例如：一个页面转变的canvas image的长度是一个pdf页面长度的3倍，那我们需要在new出来的jsPDF对象中新增两个页面，然后把pageData放到每个页面中，并设置好偏移量）
+
+//分页demo
+html2canvas(document.body, {
+  onrendered:function(canvas) {
+
+      var contentWidth = canvas.width;
+      var contentHeight = canvas.height;
+
+      //一页pdf显示html页面生成的canvas高度;
+      var pageHeight = contentWidth / 592.28 * 841.89;
+      //未生成pdf的html页面高度
+      var leftHeight = contentHeight;
+      //页面偏移
+      var position = 0;
+      //a4纸的尺寸[595.28,841.89]，html页面生成的canvas在pdf中图片的宽高
+      var imgWidth = 595.28;
+      var imgHeight = 592.28/contentWidth * contentHeight;
+
+      var pageData = canvas.toDataURL('image/jpeg', 1.0);
+
+      var pdf = new jsPDF('', 'pt', 'a4');
+
+      //有两个高度需要区分，一个是html页面的实际高度，和生成pdf的页面高度(841.89)
+      //当内容未超过pdf一页显示的范围，无需分页
+      if (leftHeight < pageHeight) {
+      pdf.addImage(pageData, 'JPEG', 0, 0, imgWidth, imgHeight );
+      } else {
+          while(leftHeight > 0) {
+              pdf.addImage(pageData, 'JPEG', 0, position, imgWidth, imgHeight)
+              leftHeight -= pageHeight;
+              position -= 841.89;
+              //避免添加空白页
+              if(leftHeight > 0) {
+                pdf.addPage();
+              }
+          }
+      }
+
+      pdf.save('content.pdf');
+  }
+})
+
+参考网站：https://segmentfault.com/a/1190000009211079#articleHeader0
